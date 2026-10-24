@@ -13,7 +13,10 @@ DEFAULT_CONFIG = {
     "x": 100,            # 色を読み取る座標 X
     "y": 100,            # 色を読み取る座標 Y
     "border": 25,        # 外周の枠の太さ (px)
-    "interval_sec": 0.5  # 色を確認する間隔 (秒)
+    "interval_sec": 0.5, # 色を確認する間隔 (秒)
+    "pc_name": "",       # ログに記録するPC名 (空ならWindowsのコンピューター名)
+    "log_dir": "logs",   # ログの保存先 (共有フォルダも指定可)
+    "labels": {}         # 色の名前 (例: {"#0078d7": "進行中"})。レポートの表示用
 }
 
 user32.GetDC.argtypes = [wintypes.HWND]

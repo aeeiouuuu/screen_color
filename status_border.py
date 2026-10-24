@@ -1,14 +1,17 @@
 """状態表示ボーダー
 config.json の座標の色を 0.5 秒ごとに読み取り、画面の外周を同じ色の枠で塗ります。
+色が変わるたびに logs/ フォルダへ記録します (analyze.py で分析)。
 枠は常に最前面・クリックは下の画面に素通りするので作業の邪魔になりません。
 終了: このプログラムを起動したコンソールで Ctrl+C、またはコンソールを閉じる。
 """
 import ctypes
+import os
 import signal
 import tkinter as tk
 
-from screen_utils import (get_pixel, load_config, screen_size, set_dpi_aware,
-                          to_hex)
+from color_log import ColorLogger, resolve_log_dir, resolve_pc_name
+from screen_utils import (CONFIG_PATH, get_pixel, load_config, screen_size,
+                          set_dpi_aware, to_hex)
 
 user32 = ctypes.windll.user32
 GWL_EXSTYLE = -20
@@ -39,6 +42,8 @@ def main():
     b = int(cfg["border"])
     interval_ms = int(float(cfg["interval_sec"]) * 1000)
     w, h = screen_size()
+    logger = ColorLogger(resolve_log_dir(cfg, os.path.dirname(CONFIG_PATH)),
+                         resolve_pc_name(cfg))
 
     if x < b or y < b or x >= w - b or y >= h - b:
         print(f"警告: 読み取り座標 ({x}, {y}) が枠 (太さ {b}px) に隠れます。"
@@ -74,6 +79,7 @@ def main():
                 for bar in bars:
                     bar.config(bg=color)
                 print(f"色が変わりました: {rgb} {color}")
+                logger.write("COLOR", color)
                 state["color"] = color
 
         # 他のウィンドウに最前面を取られても戻す (約5秒ごと)
@@ -86,9 +92,14 @@ def main():
         root.after(interval_ms, tick)
 
     print(f"監視開始: 座標 ({x}, {y}), 間隔 {interval_ms}ms, 枠 {b}px  (終了は Ctrl+C)")
+    print(f"ログ保存先: {logger.log_dir}  (PC名: {logger.pc})")
+    logger.write("START")
     signal.signal(signal.SIGINT, lambda *_: root.destroy())
     tick()
-    root.mainloop()
+    try:
+        root.mainloop()
+    finally:
+        logger.write("END")
 
 
 if __name__ == "__main__":

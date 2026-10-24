@@ -1,2 +1,6 @@
 __pycache__/
 *.pyc
+logs/
+reports/
+sample_logs/
+.claude/
