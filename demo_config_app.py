@@ -7,7 +7,7 @@ status_border.py の動作確認・デモ用です。
 
 - 「自動モード」: 待機 → 進行中 → (たまにエラー) → 完了 を自動で繰り返す
 - ボタンで手動で状態を切り替えることもできる
-- 「この位置を config に設定」: 状態表示の座標を config.json に書き込む
+- 「この位置を config に設定」: 状態表示の座標・ウィンドウ名・色の名前を config.json に書き込む
 """
 import random
 import tkinter as tk
@@ -22,6 +22,8 @@ STATES = {
     "完了":   "#00b050",
 }
 DEMO_LABELS = {color: name for name, color in STATES.items()}
+DEMO_ROLES = {"done": "完了", "error": "エラー"}
+WINDOW_TITLE = "Config Tool (DEMO)"
 
 # 自動モードの各状態の長さ (秒)
 DURATION = {"待機": (3, 6), "進行中": (8, 15), "エラー": (4, 8), "完了": (2, 4)}
@@ -33,7 +35,7 @@ WINDOW_POS = (300, 200)  # ウィンドウの位置は固定 (本物と同じ想
 class DemoApp:
     def __init__(self, root):
         self.root = root
-        root.title("Config Tool (DEMO)")
+        root.title(WINDOW_TITLE)
         root.geometry(f"+{WINDOW_POS[0]}+{WINDOW_POS[1]}")
         root.resizable(False, False)
 
@@ -135,6 +137,8 @@ class DemoApp:
         labels = dict(cfg.get("labels") or {})
         labels.update(DEMO_LABELS)
         cfg["labels"] = labels
+        cfg["roles"] = DEMO_ROLES
+        cfg["window_title"] = WINDOW_TITLE
         save_config(cfg)
         self.msg.config(text=f"config.json に保存しました: ({x}, {y})")
 

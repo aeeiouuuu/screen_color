@@ -1,8 +1,11 @@
 {
-  "x": 542,
-  "y": 159,
+  "x": 405,
+  "y": 261,
+  "window_title": "",
   "border": 25,
   "interval_sec": 0.5,
+  "stable_samples": 2,
+  "color_tolerance": 40,
   "pc_name": "",
   "log_dir": "logs",
   "labels": {
@@ -10,5 +13,9 @@
     "#0078d7": "進行中",
     "#ffc000": "エラー",
     "#00b050": "完了"
+  },
+  "roles": {
+    "done": "完了",
+    "error": "エラー"
   }
 }

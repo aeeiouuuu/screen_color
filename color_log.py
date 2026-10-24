@@ -4,6 +4,7 @@
     logs/<PC名>_<YYYYMMDD>.csv
 列: timestamp, pc, event, color
     event = START (監視開始) / COLOR (色が変わった) / END (監視終了)
+            HIDE (対象が見えなくなった。color 列に理由) / SHOW (また見えるようになった)
 """
 import csv
 import glob
@@ -58,26 +59,53 @@ def read_logs(log_dir):
 
 
 def build_segments(records):
-    """レコードを「ある色が続いた区間」のリストに変換する
+    """レコードを「ある色が続いた区間」に変換する
 
-    区間の終わり = 同じ PC の次のレコードの時刻。
-    次のレコードが START (前回が異常終了) の場合や、最後の区間は終わりが不明なので捨てる。
+    戻り値: (segments, hides)
+      segments: {pc, session, color, start, end, seconds, hidden}
+                hidden = 区間のうち対象が見えていなかった秒数
+      hides:    {pc, start, end}  見えていなかった期間
+
+    - 区間の終わり = 次の COLOR / END の時刻 (HIDE/SHOW では区切らない)
+    - START が来たら前回は異常終了とみなし、終わりの分からない区間は捨てる
     """
-    segments = []
+    segments, hides = [], []
     by_pc = {}
     for r in records:
         by_pc.setdefault(r["pc"], []).append(r)
 
     for pc, rows in by_pc.items():
-        for cur, nxt in zip(rows, rows[1:]):
-            if cur["event"] != "COLOR" or nxt["event"] == "START":
-                continue
-            start, end = cur["timestamp"], nxt["timestamp"]
-            segments.append({
-                "pc": pc,
-                "color": cur["color"],
-                "start": start,
-                "end": end,
-                "seconds": (end - start).total_seconds(),
-            })
-    return segments
+        cur = None
+        hide_start = None
+        session = 0
+
+        def close_hide(t):
+            nonlocal hide_start
+            if hide_start is None:
+                return
+            hides.append({"pc": pc, "start": hide_start, "end": t})
+            if cur:
+                cur["hidden"] += (t - hide_start).total_seconds()
+            hide_start = None
+
+        for r in rows:
+            t, ev = r["timestamp"], r["event"]
+            if ev == "START":
+                cur, hide_start = None, None
+                session += 1
+            elif ev == "HIDE":
+                if hide_start is None:
+                    hide_start = t
+            elif ev == "SHOW":
+                close_hide(t)
+            elif ev in ("COLOR", "END"):
+                close_hide(t)
+                if cur:
+                    cur["end"] = t
+                    cur["seconds"] = (t - cur["start"]).total_seconds()
+                    segments.append(cur)
+                cur = None
+                if ev == "COLOR":
+                    cur = {"pc": pc, "session": session, "color": r["color"].lower(),
+                           "start": t, "hidden": 0.0}
+    return segments, hides
